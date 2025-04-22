@@ -561,23 +561,9 @@
                     const img = new Image();
                     img.onload = function() {
                         // Process image to SVG
-                        setTimeout(() => {
-                            // Use setTimeout to allow the browser to update the UI before heavy processing
-                            processImage(img, colorOption, styleOption, thickness, color);
-                        }, 100);
-                    };
-                    img.onerror = function() {
-                        showNotification('Error loading image. The file might be corrupted.', 'error');
-                        loading.style.display = 'none';
-                        convertBtn.disabled = false;
+                        processImage(img, colorOption, styleOption, thickness, color);
                     };
                     img.src = event.target.result;
-                };
-                
-                reader.onerror = function() {
-                    showNotification('Error reading the file. Please try again.', 'error');
-                    loading.style.display = 'none';
-                    convertBtn.disabled = false;
                 };
                 
                 reader.readAsDataURL(uploadedImage);
@@ -599,187 +585,254 @@
                 const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
                 const data = imageData.data;
                 
-                try {
-                    // Create paths from the image data
-                    const paths = tracePaths(data, canvas.width, canvas.height);
-                    
-                    // Show warning if no paths were detected
-                    if (paths.length === 0) {
-                        showNotification('No transparent edges detected in the image. Try with a different image that has a transparent background.', 'error');
-                        loading.style.display = 'none';
-                        convertBtn.disabled = false;
-                        return;
+                // Create paths from the image data
+                const paths = tracePaths(data, canvas.width, canvas.height);
+                
+                // Determine color handling based on options
+                let fillAttr, strokeAttr, strokeWidthAttr;
+                let pathElements = '';
+                
+                if (colorOption === 'original') {
+                    // For original color, we need to analyze each path area for its dominant color
+                    // This is a simplified approach that samples the center color of each path
+                    for (const path of paths) {
+                        // For demonstration, let's get a representative color from the path area
+                        // In a full implementation, we would analyze the colors within each path's area
+                        const pathColor = getPathRepresentativeColor(path, data, canvas.width);
+                        
+                        if (styleOption === 'fill') {
+                            pathElements += `<path d="${path}" fill="rgb(${pathColor.r},${pathColor.g},${pathColor.b})" stroke="none" />`;
+                        } else {
+                            pathElements += `<path d="${path}" fill="none" stroke="rgb(${pathColor.r},${pathColor.g},${pathColor.b})" stroke-width="${thickness}" />`;
+                        }
                     }
                     
-                    // Convert paths to SVG
-                    const svgPaths = paths.map(path => {
-                        return `<path d="${path}" />`;
-                    }).join('');
-                    
-                    // Create the SVG document
-                    let fillAttr, strokeAttr, strokeWidthAttr;
-                    
+                    // These won't be used for original color mode, but set them to avoid errors
+                    fillAttr = 'none';
+                    strokeAttr = 'none';
+                    strokeWidthAttr = '0';
+                } else {
+                    // For default or custom color, use the same approach as before
                     if (styleOption === 'fill') {
-                        fillAttr = colorOption === 'default' ? 'black' : 
-                                  colorOption === 'colored' ? color : 'currentColor';
+                        fillAttr = colorOption === 'default' ? 'black' : color;
                         strokeAttr = 'none';
                         strokeWidthAttr = '0';
                     } else {
                         fillAttr = 'none';
-                        strokeAttr = colorOption === 'default' ? 'black' : 
-                                   colorOption === 'colored' ? color : 'currentColor';
+                        strokeAttr = colorOption === 'default' ? 'black' : color;
                         strokeWidthAttr = thickness;
                     }
                     
-                    // Handle original color option
-                    if (colorOption === 'original') {
-                        // For original color, we'll use the image directly in the SVG
-                        const dataURL = canvas.toDataURL();
-                        
-                        const svgOutput = `<svg width="${canvas.width}" height="${canvas.height}" viewBox="0 0 ${canvas.width} ${canvas.height}" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
-                            <defs>
-                                <clipPath id="shape">
-                                    ${svgPaths}
-                                </clipPath>
-                            </defs>
-                            <image xlink:href="${dataURL}" width="${canvas.width}" height="${canvas.height}" clip-path="url(#shape)" />
-                            ${styleOption === 'outline' ? `<g fill="none" stroke="${strokeAttr === 'currentColor' ? 'black' : strokeAttr}" stroke-width="${strokeWidthAttr}" opacity="0.8">
-                                ${svgPaths}
-                            </g>` : ''}
-                        </svg>`;
-                        
-                        // Display the SVG
-                        displaySVG(svgOutput);
-                    } else {
-                        // Standard black or custom color SVG
-                        const svgOutput = `<svg width="${canvas.width}" height="${canvas.height}" viewBox="0 0 ${canvas.width} ${canvas.height}" xmlns="http://www.w3.org/2000/svg">
-                            <g fill="${fillAttr}" stroke="${strokeAttr}" stroke-width="${strokeWidthAttr}">
-                                ${svgPaths}
-                            </g>
-                        </svg>`;
-                        
-                        // Display the SVG
-                        displaySVG(svgOutput);
-                    }
-                } catch (error) {
-                    console.error('Error processing image:', error);
-                    showNotification('Error processing image. Please try a different image.', 'error');
+                    // Convert paths to SVG elements
+                    pathElements = paths.map(path => {
+                        return `<path d="${path}" />`;
+                    }).join('');
                 }
+                
+                // Create the SVG document
+                let svgOutput;
+                if (colorOption === 'original') {
+                    svgOutput = `<svg width="${canvas.width}" height="${canvas.height}" viewBox="0 0 ${canvas.width} ${canvas.height}" xmlns="http://www.w3.org/2000/svg">
+                        ${pathElements}
+                    </svg>`;
+                } else {
+                    svgOutput = `<svg width="${canvas.width}" height="${canvas.height}" viewBox="0 0 ${canvas.width} ${canvas.height}" xmlns="http://www.w3.org/2000/svg">
+                        <g fill="${fillAttr}" stroke="${strokeAttr}" stroke-width="${strokeWidthAttr}">
+                            ${pathElements}
+                        </g>
+                    </svg>`;
+                }
+                
+                // Display the SVG
+                displaySVG(svgOutput);
                 
                 // Hide loading
                 loading.style.display = 'none';
                 convertBtn.disabled = false;
             }
-
-            function tracePaths(data, width, height) {
-                // This function implements a simplified contour tracing algorithm
-                // to detect edges between transparent and non-transparent areas
+            
+            function getPathRepresentativeColor(pathString, imageData, width) {
+                // Extract points from the path
+                const pointsMatch = pathString.match(/M([\d.]+),([\d.]+)/);
+                if (!pointsMatch) return { r: 0, g: 0, b: 0 }; // Default black if no match
                 
-                // Create a binary representation of the image based on transparency
-                const binary = new Uint8Array(width * height);
-                for (let i = 0; i < height; i++) {
-                    for (let j = 0; j < width; j++) {
-                        const idx = (i * width + j) * 4;
-                        // If alpha value > 0, mark as solid (1), otherwise transparent (0)
-                        binary[i * width + j] = data[idx + 3] > 10 ? 1 : 0;
+                // Get a representative point from the path
+                const x = Math.round(parseFloat(pointsMatch[1]));
+                const y = Math.round(parseFloat(pointsMatch[2]));
+                
+                // Get the color at this point
+                const idx = (y * width + x) * 4;
+                return {
+                    r: imageData[idx],
+                    g: imageData[idx + 1],
+                    b: imageData[idx + 2]
+                };
+            }
+
+            function tracePaths(imageData, width, height) {
+                // Extract alpha channel and convert to binary image
+                const alphaData = extractAlphaChannel(imageData, width, height);
+                
+                // Find contours in the binary image
+                const contours = findContours(alphaData, width, height);
+                
+                // Simplify contours and convert to SVG paths
+                return contours.map(contour => {
+                    const simplified = simplifyContour(contour, 1.0); // Epsilon of 1.0 pixel
+                    return pointsToSVGPath(simplified);
+                });
+            }
+            
+            function extractAlphaChannel(imageData, width, height) {
+                const alphaChannel = new Uint8Array(width * height);
+                const threshold = 128; // Alpha threshold for binary image
+                
+                for (let i = 0; i < width * height; i++) {
+                    // Alpha is every 4th value in RGBA data
+                    const alpha = imageData[i * 4 + 3];
+                    alphaChannel[i] = alpha > threshold ? 1 : 0;
+                }
+                
+                return alphaChannel;
+            }
+            
+            function findContours(binaryData, width, height) {
+                const visited = new Array(width * height).fill(false);
+                const contours = [];
+                
+                // Find the contours in the binary image
+                for (let y = 0; y < height; y++) {
+                    for (let x = 0; x < width; x++) {
+                        const idx = y * width + x;
+                        
+                        // If this pixel is part of the foreground and hasn't been visited yet
+                        if (binaryData[idx] === 1 && !visited[idx]) {
+                            // Check if this pixel is on the boundary
+                            // A pixel is on the boundary if it has at least one background neighbor
+                            const hasBackgroundNeighbor = 
+                                (x === 0 || binaryData[(y) * width + (x-1)] === 0) ||
+                                (x === width-1 || binaryData[(y) * width + (x+1)] === 0) ||
+                                (y === 0 || binaryData[(y-1) * width + (x)] === 0) ||
+                                (y === height-1 || binaryData[(y+1) * width + (x)] === 0);
+                            
+                            if (hasBackgroundNeighbor) {
+                                // Start a new contour
+                                const contour = traceContour(binaryData, visited, x, y, width, height);
+                                if (contour.length > 2) { // Only keep contours with at least 3 points
+                                    contours.push(contour);
+                                }
+                            }
+                        }
                     }
                 }
                 
-                // Use marching squares algorithm to trace contours
-                const paths = [];
-                const visited = new Set();
+                return contours;
+            }
+            
+            function traceContour(binaryData, visited, startX, startY, width, height) {
+                const contour = [];
+                let x = startX;
+                let y = startY;
+                let direction = 0; // 0: right, 1: down, 2: left, 3: up
                 
-                // Direction vectors: right, down, left, up
+                // Directions: right, down, left, up
                 const dx = [1, 0, -1, 0];
                 const dy = [0, 1, 0, -1];
                 
-                for (let y = 1; y < height - 1; y++) {
-                    for (let x = 1; x < width - 1; x++) {
-                        const idx = y * width + x;
+                do {
+                    // Mark current pixel as visited
+                    visited[y * width + x] = true;
+                    
+                    // Add current pixel to contour
+                    contour.push({x, y});
+                    
+                    // Find next boundary pixel (Moore-Neighbor tracing)
+                    let found = false;
+                    let newDirection = (direction + 3) % 4; // Turn left
+                    
+                    for (let i = 0; i < 4 && !found; i++) {
+                        const nx = x + dx[newDirection];
+                        const ny = y + dy[newDirection];
                         
-                        // Skip if this pixel has already been visited or not an edge
-                        if (visited.has(idx) || binary[idx] === 0) continue;
-                        
-                        // Check if it's an edge pixel (has at least one transparent neighbor)
-                        let isEdge = false;
-                        for (let d = 0; d < 4; d++) {
-                            const nx = x + dx[d];
-                            const ny = y + dy[d];
-                            
-                            if (nx >= 0 && nx < width && ny >= 0 && ny < height) {
-                                const nidx = ny * width + nx;
-                                if (binary[nidx] === 0) {
-                                    isEdge = true;
-                                    break;
-                                }
-                            }
+                        // Check if the pixel is valid and part of the foreground
+                        if (nx >= 0 && nx < width && ny >= 0 && ny < height && 
+                            binaryData[ny * width + nx] === 1) {
+                            x = nx;
+                            y = ny;
+                            direction = newDirection;
+                            found = true;
+                        } else {
+                            // Turn right if we can't go in current direction
+                            newDirection = (newDirection + 1) % 4;
                         }
-                        
-                        if (!isEdge) continue;
-                        
-                        // Start tracing contour
-                        const contour = [];
-                        let cx = x;
-                        let cy = y;
-                        let dir = 0; // Start direction: right
-                        
-                        do {
-                            contour.push([cx, cy]);
-                            visited.add(cy * width + cx);
-                            
-                            // Find next edge pixel in clockwise direction
-                            let found = false;
-                            let count = 0;
-                            
-                            while (!found && count < 4) {
-                                const nx = cx + dx[dir];
-                                const ny = cy + dy[dir];
-                                
-                                if (nx >= 0 && nx < width && ny >= 0 && ny < height && binary[ny * width + nx] === 1) {
-                                    // Check if it's an edge pixel
-                                    for (let d = 0; d < 4; d++) {
-                                        const nnx = nx + dx[d];
-                                        const nny = ny + dy[d];
-                                        
-                                        if (nnx >= 0 && nnx < width && nny >= 0 && nny < height && binary[nny * width + nnx] === 0) {
-                                            cx = nx;
-                                            cy = ny;
-                                            found = true;
-                                            break;
-                                        }
-                                    }
-                                }
-                                
-                                if (!found) {
-                                    dir = (dir + 1) % 4; // Try next direction
-                                    count++;
-                                }
-                            }
-                            
-                            if (!found) break; // No more edge pixels found
-                            
-                        } while ((cx !== x || cy !== y) && contour.length < width * height);
-                        
-                        // Convert contour to SVG path
-                        if (contour.length > 2) {
-                            let path = `M${contour[0][0]},${contour[0][1]}`;
-                            
-                            for (let i = 1; i < contour.length; i++) {
-                                path += ` L${contour[i][0]},${contour[i][1]}`;
-                            }
-                            
-                            path += " Z"; // Close path
-                            paths.push(path);
-                        }
+                    }
+                    
+                    // If we couldn't find any unvisited foreground pixel, break
+                    if (!found) break;
+                    
+                } while (x !== startX || y !== startY);
+                
+                return contour;
+            }
+            
+            function simplifyContour(points, epsilon) {
+                if (points.length <= 2) return points;
+                
+                // Find the point with the maximum distance
+                let maxDistance = 0;
+                let maxIndex = 0;
+                
+                const firstPoint = points[0];
+                const lastPoint = points[points.length - 1];
+                
+                for (let i = 1; i < points.length - 1; i++) {
+                    const distance = perpendicularDistance(points[i], firstPoint, lastPoint);
+                    if (distance > maxDistance) {
+                        maxDistance = distance;
+                        maxIndex = i;
                     }
                 }
                 
-                // If no paths were detected (e.g., fully transparent image), return empty path
-                if (paths.length === 0) {
-                    return [];
+                // If max distance is greater than epsilon, recursively simplify
+                if (maxDistance > epsilon) {
+                    const firstPart = simplifyContour(points.slice(0, maxIndex + 1), epsilon);
+                    const lastPart = simplifyContour(points.slice(maxIndex), epsilon);
+                    
+                    // Concatenate the two parts
+                    return firstPart.slice(0, -1).concat(lastPart);
+                } else {
+                    // If distance is less than epsilon, remove all points between first and last
+                    return [firstPoint, lastPoint];
+                }
+            }
+            
+            function perpendicularDistance(point, lineStart, lineEnd) {
+                const dx = lineEnd.x - lineStart.x;
+                const dy = lineEnd.y - lineStart.y;
+                
+                // If the line is just a point, return distance to that point
+                if (dx === 0 && dy === 0) {
+                    const distX = point.x - lineStart.x;
+                    const distY = point.y - lineStart.y;
+                    return Math.sqrt(distX * distX + distY * distY);
                 }
                 
-                return paths;
+                // Calculate the perpendicular distance
+                const norm = Math.sqrt(dx * dx + dy * dy);
+                return Math.abs((dy * point.x - dx * point.y + lineEnd.x * lineStart.y - lineEnd.y * lineStart.x) / norm);
+            }
+            
+            function pointsToSVGPath(points) {
+                if (points.length === 0) return "";
+                
+                let path = `M${points[0].x},${points[0].y}`;
+                
+                for (let i = 1; i < points.length; i++) {
+                    path += ` L${points[i].x},${points[i].y}`;
+                }
+                
+                path += " Z"; // Close the path
+                return path;
             }
 
             function displaySVG(svg) {
@@ -840,6 +893,9 @@
 
             // Initialize the UI
             outlineThicknessGroup.style.display = 'none'; // Hide thickness initially since Fill is default
+            
+            // Show a welcome notification
+            showNotification('Welcome to Image2Vector! Upload a transparent image to get started.', 'success');
         });
     </script>
 </body>
