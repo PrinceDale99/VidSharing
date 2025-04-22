@@ -1,0 +1,586 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Image2Vector - Convert Images to SVG</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/potrace/1.16.0/potrace.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/stackblur-canvas/2.5.0/stackblur.min.js"></script>
+    <style>
+        :root {
+            --primary-color: #4361ee;
+            --secondary-color: #3f37c9;
+            --light-color: #f8f9fa;
+            --dark-color: #212529;
+            --success-color: #4cc9f0;
+            --border-radius: 8px;
+            --box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            --transition: all 0.3s ease;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: var(--dark-color);
+            background-color: #f0f2f5;
+            margin: 0;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        h1 {
+            color: var(--primary-color);
+            margin-bottom: 10px;
+        }
+
+        .tagline {
+            color: #666;
+            font-size: 1.1rem;
+        }
+
+        .converter-container {
+            display: flex;
+            flex-direction: column;
+            gap: 30px;
+        }
+
+        @media (min-width: 768px) {
+            .converter-container {
+                flex-direction: row;
+            }
+        }
+
+        .upload-section, .options-section, .output-section {
+            background-color: white;
+            border-radius: var(--border-radius);
+            padding: 20px;
+            box-shadow: var(--box-shadow);
+        }
+
+        .upload-section, .options-section {
+            flex: 1;
+        }
+
+        .output-section {
+            flex: 2;
+        }
+
+        h2 {
+            margin-top: 0;
+            color: var(--secondary-color);
+            font-size: 1.3rem;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #eee;
+        }
+
+        .upload-area {
+            border: 2px dashed #ccc;
+            border-radius: var(--border-radius);
+            padding: 40px 20px;
+            text-align: center;
+            transition: var(--transition);
+            cursor: pointer;
+            margin-bottom: 15px;
+        }
+
+        .upload-area:hover, .upload-area.dragover {
+            border-color: var(--primary-color);
+            background-color: rgba(67, 97, 238, 0.05);
+        }
+
+        .upload-icon {
+            font-size: 40px;
+            color: #ccc;
+            margin-bottom: 10px;
+        }
+
+        .upload-text {
+            margin-bottom: 15px;
+        }
+
+        .file-input {
+            display: none;
+        }
+
+        .btn {
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: var(--border-radius);
+            cursor: pointer;
+            transition: var(--transition);
+            font-weight: 500;
+        }
+
+        .btn:hover {
+            background-color: var(--secondary-color);
+        }
+
+        .btn:disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
+        }
+
+        .btn-outline {
+            background-color: transparent;
+            border: 1px solid var(--primary-color);
+            color: var(--primary-color);
+        }
+
+        .btn-outline:hover {
+            background-color: var(--primary-color);
+            color: white;
+        }
+
+        .option-group {
+            margin-bottom: 20px;
+        }
+
+        .option-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+        }
+
+        .radio-group {
+            display: flex;
+            gap: 15px;
+        }
+
+        .radio-option {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .color-picker {
+            width: 100%;
+            height: 40px;
+            border: 1px solid #ddd;
+            border-radius: var(--border-radius);
+            cursor: pointer;
+        }
+
+        .range-slider {
+            width: 100%;
+            margin-top: 5px;
+        }
+
+        .thickness-value {
+            display: inline-block;
+            width: 30px;
+            text-align: center;
+        }
+
+        .preview-container {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .preview-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .preview-area {
+            background-color: #f9f9f9;
+            border: 1px solid #eee;
+            border-radius: var(--border-radius);
+            min-height: 200px;
+            padding: 10px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+        }
+
+        .svg-code {
+            background-color: #f9f9f9;
+            border: 1px solid #eee;
+            border-radius: var(--border-radius);
+            padding: 15px;
+            font-family: monospace;
+            white-space: pre-wrap;
+            overflow-x: auto;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+
+        .download-options {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        .image-preview {
+            max-width: 100%;
+            max-height: 300px;
+            display: block;
+            margin: 0 auto;
+        }
+
+        .svg-preview {
+            max-width: 100%;
+            max-height: 300px;
+        }
+
+        .disabled {
+            opacity: 0.5;
+            pointer-events: none;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        .tabs {
+            display: flex;
+            margin-bottom: 15px;
+            border-bottom: 1px solid #eee;
+        }
+
+        .tab {
+            padding: 8px 15px;
+            cursor: pointer;
+            border-bottom: 2px solid transparent;
+        }
+
+        .tab.active {
+            border-bottom: 2px solid var(--primary-color);
+            color: var(--primary-color);
+            font-weight: 500;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+        
+        .alert {
+            padding: 10px 15px;
+            border-radius: var(--border-radius);
+            margin-bottom: 15px;
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        
+        .alert-success {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 20px;
+        }
+        
+        .spinner {
+            border: 4px solid rgba(0, 0, 0, 0.1);
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            border-left-color: var(--primary-color);
+            animation: spin 1s linear infinite;
+            margin: 0 auto 10px;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Image2Vector</h1>
+            <p class="tagline">Convert transparent images to scalable vector graphics (SVG)</p>
+        </header>
+
+        <div class="converter-container">
+            <div class="upload-section">
+                <h2>1. Upload Image</h2>
+                <div class="upload-area" id="uploadArea">
+                    <div class="upload-icon">📁</div>
+                    <p class="upload-text">Drag & drop an image with transparency or click to browse</p>
+                    <input type="file" id="fileInput" class="file-input" accept="image/*">
+                    <button class="btn btn-outline" id="browseBtn">Browse Files</button>
+                </div>
+                <div id="imagePreviewContainer" class="hidden">
+                    <h3>Original Image</h3>
+                    <div class="preview-area">
+                        <img id="imagePreview" class="image-preview" alt="Original image preview">
+                    </div>
+                    <button class="btn btn-outline" id="changeImageBtn" style="margin-top: 10px;">Change Image</button>
+                </div>
+            </div>
+
+            <div class="options-section">
+                <h2>2. Customize Options</h2>
+                <div class="option-group">
+                    <label>Color Choice:</label>
+                    <div class="radio-group">
+                        <div class="radio-option">
+                            <input type="radio" id="colorDefault" name="colorChoice" value="default" checked>
+                            <label for="colorDefault">Default (Black)</label>
+                        </div>
+                        <div class="radio-option">
+                            <input type="radio" id="colorCustom" name="colorChoice" value="custom">
+                            <label for="colorCustom">Custom Color</label>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="option-group" id="colorPickerGroup">
+                    <label for="colorPicker">Select Color:</label>
+                    <input type="color" id="colorPicker" class="color-picker" value="#000000">
+                </div>
+
+                <div class="option-group">
+                    <label>Style:</label>
+                    <div class="radio-group">
+                        <div class="radio-option">
+                            <input type="radio" id="styleFill" name="styleChoice" value="fill" checked>
+                            <label for="styleFill">Fill</label>
+                        </div>
+                        <div class="radio-option">
+                            <input type="radio" id="styleOutline" name="styleChoice" value="outline">
+                            <label for="styleOutline">Outline</label>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="option-group" id="outlineThicknessGroup">
+                    <label for="outlineThickness">Outline Thickness: <span id="thicknessValue" class="thickness-value">1</span>px</label>
+                    <input type="range" id="outlineThickness" class="range-slider" min="1" max="10" value="1">
+                </div>
+
+                <button id="convertBtn" class="btn" disabled>Convert to SVG</button>
+            </div>
+        </div>
+
+        <div class="output-section hidden" id="outputSection">
+            <h2>3. Output & Download</h2>
+            
+            <div id="alertContainer"></div>
+            
+            <div id="loadingIndicator" class="loading hidden">
+                <div class="spinner"></div>
+                <p>Converting image to SVG...</p>
+            </div>
+            
+            <div class="preview-container">
+                <div class="preview-header">
+                    <h3>SVG Preview</h3>
+                </div>
+                <div class="preview-area" id="svgPreviewArea">
+                    <div id="svgContainer"></div>
+                </div>
+            </div>
+
+            <div class="tabs">
+                <div class="tab active" data-tab="preview">Preview</div>
+                <div class="tab" data-tab="code">SVG Code</div>
+            </div>
+
+            <div class="tab-content active" data-tab-content="preview">
+                <div class="download-options">
+                    <button id="downloadSvgBtn" class="btn">Download SVG</button>
+                    <button id="copySvgBtn" class="btn btn-outline">Copy SVG Code</button>
+                </div>
+            </div>
+
+            <div class="tab-content" data-tab-content="code">
+                <pre class="svg-code" id="svgCode"></pre>
+                <button id="copySvgCodeBtn" class="btn" style="margin-top: 10px;">Copy Code</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // DOM Elements
+            const uploadArea = document.getElementById('uploadArea');
+            const fileInput = document.getElementById('fileInput');
+            const browseBtn = document.getElementById('browseBtn');
+            const imagePreviewContainer = document.getElementById('imagePreviewContainer');
+            const imagePreview = document.getElementById('imagePreview');
+            const changeImageBtn = document.getElementById('changeImageBtn');
+            const colorDefault = document.getElementById('colorDefault');
+            const colorCustom = document.getElementById('colorCustom');
+            const colorPickerGroup = document.getElementById('colorPickerGroup');
+            const colorPicker = document.getElementById('colorPicker');
+            const styleFill = document.getElementById('styleFill');
+            const styleOutline = document.getElementById('styleOutline');
+            const outlineThicknessGroup = document.getElementById('outlineThicknessGroup');
+            const outlineThickness = document.getElementById('outlineThickness');
+            const thicknessValue = document.getElementById('thicknessValue');
+            const convertBtn = document.getElementById('convertBtn');
+            const outputSection = document.getElementById('outputSection');
+            const svgPreviewArea = document.getElementById('svgPreviewArea');
+            const svgContainer = document.getElementById('svgContainer');
+            const svgCode = document.getElementById('svgCode');
+            const downloadSvgBtn = document.getElementById('downloadSvgBtn');
+            const copySvgBtn = document.getElementById('copySvgBtn');
+            const copySvgCodeBtn = document.getElementById('copySvgCodeBtn');
+            const tabs = document.querySelectorAll('.tab');
+            const tabContents = document.querySelectorAll('.tab-content');
+            const alertContainer = document.getElementById('alertContainer');
+            const loadingIndicator = document.getElementById('loadingIndicator');
+
+            let uploadedImage = null;
+            let generatedSvg = null;
+
+            // Initialize UI state
+            colorPickerGroup.classList.add('disabled');
+            outlineThicknessGroup.classList.add('disabled');
+
+            // Event Listeners
+            browseBtn.addEventListener('click', () => fileInput.click());
+            fileInput.addEventListener('change', handleFileSelect);
+            uploadArea.addEventListener('dragover', handleDragOver);
+            uploadArea.addEventListener('dragleave', handleDragLeave);
+            uploadArea.addEventListener('drop', handleDrop);
+            changeImageBtn.addEventListener('click', () => {
+                uploadArea.classList.remove('hidden');
+                imagePreviewContainer.classList.add('hidden');
+                convertBtn.disabled = true;
+                outputSection.classList.add('hidden');
+            });
+
+            colorDefault.addEventListener('change', updateColorOptions);
+            colorCustom.addEventListener('change', updateColorOptions);
+
+            styleFill.addEventListener('change', updateStyleOptions);
+            styleOutline.addEventListener('change', updateStyleOptions);
+
+            outlineThickness.addEventListener('input', () => {
+                thicknessValue.textContent = outlineThickness.value;
+            });
+
+            convertBtn.addEventListener('click', convertToSvg);
+
+            downloadSvgBtn.addEventListener('click', downloadSvg);
+            copySvgBtn.addEventListener('click', () => copyToClipboard(generatedSvg));
+            copySvgCodeBtn.addEventListener('click', () => copyToClipboard(generatedSvg));
+
+            // Tab functionality
+            tabs.forEach(tab => {
+                tab.addEventListener('click', () => {
+                    tabs.forEach(t => t.classList.remove('active'));
+                    tabContents.forEach(c => c.classList.remove('active'));
+                    tab.classList.add('active');
+                    document.querySelector(`[data-tab-content="${tab.dataset.tab}"]`).classList.add('active');
+                });
+            });
+
+            // Functions
+            function handleDragOver(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                uploadArea.classList.add('dragover');
+            }
+
+            function handleDragLeave(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                uploadArea.classList.remove('dragover');
+            }
+
+            function handleDrop(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                uploadArea.classList.remove('dragover');
+                
+                if (e.dataTransfer.files.length) {
+                    processUploadedFile(e.dataTransfer.files[0]);
+                }
+            }
+
+            function handleFileSelect(e) {
+                if (e.target.files.length) {
+                    processUploadedFile(e.target.files[0]);
+                }
+            }
+
+            function processUploadedFile(file) {
+                if (!file.type.startsWith('image/')) {
+                    showAlert('Please select a valid image file', 'error');
+                    return;
+                }
+                
+                uploadedImage = file;
+                const reader = new FileReader();
+                
+                reader.onload = (e) => {
+                    imagePreview.src = e.target.result;
+                    uploadArea.classList.add('hidden');
+                    imagePreviewContainer.classList.remove('hidden');
+                    convertBtn.disabled = false;
+                };
+                
+                reader.readAsDataURL(file);
+            }
+
+            function updateColorOptions() {
+                if (colorCustom.checked) {
+                    colorPickerGroup.classList.remove('disabled');
+                } else {
+                    colorPickerGroup.classList.add('disabled');
+                }
+            }
+
+            function updateStyleOptions() {
+                if (styleOutline.checked) {
+                    outlineThicknessGroup.classList.remove('disabled');
+                } else {
+                    outlineThicknessGroup.classList.add('disabled');
+                }
+            }
+
+            async function convertToSvg() {
+                if (!uploadedImage) {
+                    showAlert('Please upload an image first', 'error');
+                    return;
+                }
+                
+                try {
+                    // Show loading indicator
+                    loadingIndicator.classList.remove('hidden');
+                    outputSection.classList.remove('hidden');
+                    
+                    // Create an image element
+                    const img = new Image();
+                    img.src = URL.createObjectURL(uploadedImage);
+                    
+                    await new Promise((resolve, reject) => {
+                        img.onload = resolve;
+                        img.onerror = reject;
+                    });
+                    
+                    // Create a canvas and draw the image
+                    const canvas = document.createElement('canvas');
+                    const ctx = canvas.getContext('2d');
+                    canvas.width = img.width;
+                    canvas.height = img.height;
+                 
