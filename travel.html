@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>KWITIS - Travel Vlogs</title>
+  <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" />
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body, html {
+      margin: 0;
+      padding: 0;
+      height: 100%;
+      font-family: sans-serif;
+      background: linear-gradient(to bottom, black, black, red);
+      color: white;
+      overflow-x: hidden;
+    }
+
+    #content {
+      padding: 2rem 1rem;
+      text-align: center;
+    }
+
+    h1, h3 {
+      margin-bottom: 20px;
+    }
+
+    .iframe-container {
+      position: relative;
+      width: 100%;
+      padding-bottom: 56.25%;
+      height: 0;
+      overflow: hidden;
+      margin-bottom: 1rem;
+    }
+
+    .iframe-container iframe {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      border: none;
+    }
+
+    button {
+      padding: 10px 20px;
+      background-color: #004792;
+      color: #fff;
+      border: none;
+      border-radius: 5px;
+      margin: 5px;
+      cursor: pointer;
+      transition: background-color 0.2s ease-in-out;
+    }
+
+    button:hover {
+      background-color: #003570;
+    }
+
+    footer {
+      color: #ccc;
+      margin-top: 2rem;
+      font-size: 0.9rem;
+    }
+
+    @media (max-width: 768px) {
+      h1 { font-size: 28px; }
+      h3 { font-size: 20px; }
+    }
+
+    @media (max-width: 480px) {
+      h1 { font-size: 22px; }
+      h3 { font-size: 16px; }
+    }
+  </style>
+</head>
+<body>
+  <div id="content" class="container">
+    <h1>"KWITIS"</h1>
+
+    <div class="iframe-container">
+      <iframe id="iframe" src="https://drive.google.com/file/d/1qy_JCzJBlFGph-G2VpV7PGkM3QLJEzjh/preview" allowfullscreen allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"></iframe>
+    </div>
+
+    <h4>Select Travel Vlog to Watch!</h4>
+    <div class="page-selector">
+      <button onclick="loadPage('https://drive.google.com/file/d/1qy_JCzJBlFGph-G2VpV7PGkM3QLJEzjh/preview')">Tagaytay (Team Tagaytay)</button>
+      <button onclick="loadPage('https://drive.google.com/file/d/1wJSwoapjLUoXZ5AI8RVrstLdNztwGwx0/preview')">Maynila (Mga Kupal Sa Likod)</button>
+      <button onclick="loadPage('https://drive.google.com/file/d/1dIK63Ld444XRjpIZlaF2QS76vD_GziQ1/preview')">Ayala, Makati</button>
+      <button onclick="loadPage('https://drive.google.com/file/d/1SkzpaCOkKW0ttkznAakw0VoTFcrUwsKV/preview')">Falco, Princess Smile</button>
+    </div>
+
+    <h3>12 ICT A - SY 2024 - 2025!</h3>
+    <footer>Site made by PD Sites</footer>
+  </div>
+
+  <script>
+    function loadPage(url) {
+      document.getElementById("iframe").src = url;
+    }
+  </script>
+</body>
+</html>
