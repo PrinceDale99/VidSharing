@@ -583,4 +583,137 @@
                     const ctx = canvas.getContext('2d');
                     canvas.width = img.width;
                     canvas.height = img.height;
-                 
+                    ctx.drawImage(img, 0, 0);
+                    
+                    // Get image data with alpha channel
+                    const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+                    
+                    // Process image for tracing (handle transparency)
+                    const processedCanvas = document.createElement('canvas');
+                    const processedCtx = processedCanvas.getContext('2d');
+                    processedCanvas.width = canvas.width;
+                    processedCanvas.height = canvas.height;
+                    
+                    // Create a new ImageData with black for non-transparent pixels, white for transparent ones
+                    const processedImageData = new ImageData(canvas.width, canvas.height);
+                    
+                    for (let i = 0; i < imageData.data.length; i += 4) {
+                        // If pixel is not fully transparent (alpha > 0)
+                        if (imageData.data[i + 3] > 0) {
+                            processedImageData.data[i] = 0; // R = 0 (black)
+                            processedImageData.data[i + 1] = 0; // G = 0 (black)
+                            processedImageData.data[i + 2] = 0; // B = 0 (black)
+                            processedImageData.data[i + 3] = 255; // Alpha = 255 (fully opaque)
+                        } else {
+                            processedImageData.data[i] = 255; // R = 255 (white)
+                            processedImageData.data[i + 1] = 255; // G = 255 (white)
+                            processedImageData.data[i + 2] = 255; // B = 255 (white)
+                            processedImageData.data[i + 3] = 255; // Alpha = 255 (fully opaque)
+                        }
+                    }
+                    
+                    processedCtx.putImageData(processedImageData, 0, 0);
+                    
+                    // Apply some blur to smooth edges (optional)
+                    StackBlur.canvasRGB(processedCanvas, 0, 0, processedCanvas.width, processedCanvas.height, 1);
+                    
+                    // Trace the image using Potrace
+                    const imgData = processedCtx.getImageData(0, 0, processedCanvas.width, processedCanvas.height);
+                    
+                    // Get user options
+                    const color = colorCustom.checked ? colorPicker.value : '#000000';
+                    const isFilled = styleFill.checked;
+                    const strokeWidth = styleOutline.checked ? outlineThickness.value : 0;
+                    
+                    // Configure Potrace
+                    const traceData = Potrace.trace(imgData.data, {
+                        width: processedCanvas.width,
+                        height: processedCanvas.height,
+                        pathOnly: true,
+                        threshold: 128
+                    });
+                    
+                    // Create SVG element
+                    const svgElement = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+                    svgElement.setAttribute("width", processedCanvas.width);
+                    svgElement.setAttribute("height", processedCanvas.height);
+                    svgElement.setAttribute("viewBox", `0 0 ${processedCanvas.width} ${processedCanvas.height}`);
+                    
+                    // Create path element
+                    const pathElement = document.createElementNS("http://www.w3.org/2000/svg", "path");
+                    pathElement.setAttribute("d", traceData);
+                    
+                    // Apply styling based on user options
+                    if (isFilled) {
+                        pathElement.setAttribute("fill", color);
+                        pathElement.setAttribute("stroke", "none");
+                    } else {
+                        pathElement.setAttribute("fill", "none");
+                        pathElement.setAttribute("stroke", color);
+                        pathElement.setAttribute("stroke-width", strokeWidth);
+                    }
+                    
+                    svgElement.appendChild(pathElement);
+                    
+                    // Generate SVG code
+                    generatedSvg = new XMLSerializer().serializeToString(svgElement);
+                    
+                    // Display SVG preview
+                    svgContainer.innerHTML = generatedSvg;
+                    svgCode.textContent = generatedSvg;
+                    
+                    // Hide loading indicator
+                    loadingIndicator.classList.add('hidden');
+                    
+                    // Show success message
+                    showAlert('Image successfully converted to SVG!', 'success');
+                    
+                } catch (error) {
+                    console.error('Error converting image to SVG:', error);
+                    loadingIndicator.classList.add('hidden');
+                    showAlert('Error converting image. Please try another image.', 'error');
+                }
+            }
+
+            function downloadSvg() {
+                if (!generatedSvg) return;
+                
+                const blob = new Blob([generatedSvg], { type: 'image/svg+xml' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'image2vector.svg';
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+            }
+
+            function copyToClipboard(text) {
+                navigator.clipboard.writeText(text)
+                    .then(() => {
+                        showAlert('SVG code copied to clipboard!', 'success');
+                    })
+                    .catch(err => {
+                        console.error('Could not copy text: ', err);
+                        showAlert('Failed to copy to clipboard', 'error');
+                    });
+            }
+            
+            function showAlert(message, type = 'error') {
+                const alertDiv = document.createElement('div');
+                alertDiv.className = type === 'error' ? 'alert' : 'alert alert-success';
+                alertDiv.textContent = message;
+                
+                alertContainer.innerHTML = '';
+                alertContainer.appendChild(alertDiv);
+                
+                // Auto-dismiss after 5 seconds
+                setTimeout(() => {
+                    alertDiv.remove();
+                }, 5000);
+            }
+        });
+    </script>
+</body>
+</html>
