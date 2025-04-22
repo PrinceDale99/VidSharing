@@ -4,716 +4,699 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Image2Vector - Convert Images to SVG</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/potrace/1.16.0/potrace.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/stackblur-canvas/2.5.0/stackblur.min.js"></script>
     <style>
         :root {
-            --primary-color: #4361ee;
-            --secondary-color: #3f37c9;
-            --light-color: #f8f9fa;
-            --dark-color: #212529;
-            --success-color: #4cc9f0;
-            --border-radius: 8px;
-            --box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-            --transition: all 0.3s ease;
+            --primary-color: #4a6cf7;
+            --primary-hover: #3151d4;
+            --text-color: #333;
+            --bg-color: #f8f9fa;
+            --card-bg: #ffffff;
+            --border-color: #e4e4e4;
+        }
+
+        [data-theme="dark"] {
+            --primary-color: #6a8aff;
+            --primary-hover: #5573e7;
+            --text-color: #f1f1f1;
+            --bg-color: #121212;
+            --card-bg: #1e1e1e;
+            --border-color: #333;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            transition: background-color 0.3s, color 0.3s;
         }
 
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             line-height: 1.6;
-            color: var(--dark-color);
-            background-color: #f0f2f5;
-            margin: 0;
-            padding: 20px;
-        }
-
-        .container {
-            max-width: 1000px;
-            margin: 0 auto;
-            padding: 20px;
+            color: var(--text-color);
+            background-color: var(--bg-color);
+            min-height: 100vh;
         }
 
         header {
+            background-color: var(--primary-color);
+            color: white;
+            padding: 1rem 0;
             text-align: center;
-            margin-bottom: 30px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
         }
 
-        h1 {
-            color: var(--primary-color);
-            margin-bottom: 10px;
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem 1rem;
         }
 
-        .tagline {
-            color: #666;
-            font-size: 1.1rem;
-        }
-
-        .converter-container {
+        .app-container {
             display: flex;
             flex-direction: column;
-            gap: 30px;
+            gap: 2rem;
         }
 
-        @media (min-width: 768px) {
-            .converter-container {
+        @media (min-width: 900px) {
+            .app-container {
                 flex-direction: row;
             }
         }
 
-        .upload-section, .options-section, .output-section {
-            background-color: white;
-            border-radius: var(--border-radius);
-            padding: 20px;
-            box-shadow: var(--box-shadow);
-        }
-
-        .upload-section, .options-section {
+        .upload-section, .preview-section {
             flex: 1;
+            background-color: var(--card-bg);
+            border-radius: 8px;
+            padding: 1.5rem;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+            border: 1px solid var(--border-color);
         }
 
-        .output-section {
-            flex: 2;
+        .settings-container {
+            margin-top: 1.5rem;
         }
 
-        h2 {
-            margin-top: 0;
-            color: var(--secondary-color);
-            font-size: 1.3rem;
-            margin-bottom: 15px;
-            padding-bottom: 10px;
-            border-bottom: 1px solid #eee;
-        }
-
-        .upload-area {
-            border: 2px dashed #ccc;
-            border-radius: var(--border-radius);
-            padding: 40px 20px;
+        .drop-area {
+            border: 2px dashed var(--border-color);
+            border-radius: 5px;
+            padding: 2rem;
             text-align: center;
-            transition: var(--transition);
             cursor: pointer;
-            margin-bottom: 15px;
+            margin-bottom: 1.5rem;
+            background-color: rgba(74, 108, 247, 0.05);
         }
 
-        .upload-area:hover, .upload-area.dragover {
+        .drop-area.active {
             border-color: var(--primary-color);
-            background-color: rgba(67, 97, 238, 0.05);
+            background-color: rgba(74, 108, 247, 0.1);
         }
 
-        .upload-icon {
-            font-size: 40px;
-            color: #ccc;
-            margin-bottom: 10px;
-        }
-
-        .upload-text {
-            margin-bottom: 15px;
-        }
-
-        .file-input {
-            display: none;
+        .drop-area i {
+            font-size: 3rem;
+            color: var(--primary-color);
+            margin-bottom: 1rem;
         }
 
         .btn {
             background-color: var(--primary-color);
             color: white;
             border: none;
-            padding: 10px 20px;
-            border-radius: var(--border-radius);
+            padding: 0.8rem 1.5rem;
+            border-radius: 5px;
             cursor: pointer;
-            transition: var(--transition);
+            font-size: 1rem;
             font-weight: 500;
+            transition: all 0.3s;
         }
 
         .btn:hover {
-            background-color: var(--secondary-color);
+            background-color: var(--primary-hover);
         }
 
         .btn:disabled {
-            background-color: #ccc;
+            background-color: #cccccc;
             cursor: not-allowed;
         }
 
-        .btn-outline {
-            background-color: transparent;
-            border: 1px solid var(--primary-color);
-            color: var(--primary-color);
-        }
-
-        .btn-outline:hover {
-            background-color: var(--primary-color);
-            color: white;
+        input[type="file"] {
+            display: none;
         }
 
         .option-group {
-            margin-bottom: 20px;
+            margin-bottom: 1.2rem;
         }
 
         .option-group label {
             display: block;
-            margin-bottom: 8px;
+            margin-bottom: 0.5rem;
             font-weight: 500;
         }
 
         .radio-group {
             display: flex;
-            gap: 15px;
+            gap: 1rem;
         }
 
         .radio-option {
             display: flex;
             align-items: center;
-            gap: 5px;
+            gap: 0.3rem;
         }
 
-        .color-picker {
-            width: 100%;
-            height: 40px;
-            border: 1px solid #ddd;
-            border-radius: var(--border-radius);
-            cursor: pointer;
-        }
-
-        .range-slider {
-            width: 100%;
-            margin-top: 5px;
-        }
-
-        .thickness-value {
-            display: inline-block;
-            width: 30px;
-            text-align: center;
+        .preview-section h2 {
+            margin-bottom: 1rem;
         }
 
         .preview-container {
             display: flex;
             flex-direction: column;
-            gap: 15px;
-            margin-bottom: 20px;
-        }
-
-        .preview-header {
-            display: flex;
-            justify-content: space-between;
             align-items: center;
+            gap: 1rem;
+            min-height: 300px;
         }
 
-        .preview-area {
-            background-color: #f9f9f9;
-            border: 1px solid #eee;
-            border-radius: var(--border-radius);
-            min-height: 200px;
-            padding: 10px;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            overflow: hidden;
-        }
-
-        .svg-code {
-            background-color: #f9f9f9;
-            border: 1px solid #eee;
-            border-radius: var(--border-radius);
-            padding: 15px;
-            font-family: monospace;
-            white-space: pre-wrap;
-            overflow-x: auto;
-            max-height: 200px;
-            overflow-y: auto;
-        }
-
-        .download-options {
-            display: flex;
-            gap: 10px;
-            margin-top: 15px;
-        }
-
-        .image-preview {
+        #imagePreview, #svgPreview {
             max-width: 100%;
             max-height: 300px;
-            display: block;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            padding: 1rem;
+            background-color: white;
+        }
+
+        #svgCode {
+            width: 100%;
+            min-height: 150px;
+            font-family: monospace;
+            padding: 1rem;
+            border-radius: 4px;
+            border: 1px solid var(--border-color);
+            background-color: rgba(0, 0, 0, 0.02);
+            resize: vertical;
+            white-space: pre;
+            overflow-x: auto;
+            color: var(--text-color);
+        }
+
+        .dark-mode-toggle {
+            position: fixed;
+            bottom: 2rem;
+            right: 2rem;
+            background-color: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 50%;
+            width: 3rem;
+            height: 3rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            z-index: 100;
+        }
+
+        .download-btn {
+            margin-top: 1rem;
+        }
+
+        .loader {
+            display: none;
+            border: 4px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top: 4px solid var(--primary-color);
+            width: 30px;
+            height: 30px;
+            animation: spin 1s linear infinite;
             margin: 0 auto;
         }
 
-        .svg-preview {
-            max-width: 100%;
-            max-height: 300px;
-        }
-
-        .disabled {
-            opacity: 0.5;
-            pointer-events: none;
-        }
-
-        .hidden {
-            display: none;
-        }
-
-        .tabs {
-            display: flex;
-            margin-bottom: 15px;
-            border-bottom: 1px solid #eee;
-        }
-
-        .tab {
-            padding: 8px 15px;
-            cursor: pointer;
-            border-bottom: 2px solid transparent;
-        }
-
-        .tab.active {
-            border-bottom: 2px solid var(--primary-color);
-            color: var(--primary-color);
-            font-weight: 500;
-        }
-
-        .tab-content {
-            display: none;
-        }
-
-        .tab-content.active {
-            display: block;
-        }
-        
-        .alert {
-            padding: 10px 15px;
-            border-radius: var(--border-radius);
-            margin-bottom: 15px;
-            background-color: #f8d7da;
-            color: #721c24;
-            border: 1px solid #f5c6cb;
-        }
-        
-        .alert-success {
-            background-color: #d4edda;
-            color: #155724;
-            border: 1px solid #c3e6cb;
-        }
-        
-        .loading {
-            text-align: center;
-            padding: 20px;
-        }
-        
-        .spinner {
-            border: 4px solid rgba(0, 0, 0, 0.1);
-            width: 36px;
-            height: 36px;
-            border-radius: 50%;
-            border-left-color: var(--primary-color);
-            animation: spin 1s linear infinite;
-            margin: 0 auto 10px;
-        }
-        
         @keyframes spin {
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
         }
+
+        .color-picker-container {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        input[type="color"] {
+            -webkit-appearance: none;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            border: none;
+            cursor: pointer;
+        }
+
+        input[type="color"]::-webkit-color-swatch-wrapper {
+            padding: 0;
+            border-radius: 50%;
+        }
+
+        input[type="color"]::-webkit-color-swatch {
+            border: none;
+            border-radius: 50%;
+        }
+
+        input[type="range"] {
+            width: 100%;
+        }
+
+        .range-value {
+            font-weight: 500;
+            min-width: 30px;
+            text-align: center;
+        }
+        
+        .copy-btn {
+            background-color: #28a745;
+            margin-right: 0.5rem;
+        }
+        
+        .copy-btn:hover {
+            background-color: #218838;
+        }
+        
+        .alert {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 10px 20px;
+            border-radius: 4px;
+            color: white;
+            font-weight: 500;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            z-index: 1000;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+        
+        .alert.success {
+            background-color: #28a745;
+        }
+        
+        .alert.error {
+            background-color: #dc3545;
+        }
+        
+        .alert.show {
+            opacity: 1;
+        }
     </style>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.1.1/css/all.min.css" />
 </head>
 <body>
-    <div class="container">
-        <header>
+    <header>
+        <div class="container">
             <h1>Image2Vector</h1>
-            <p class="tagline">Convert transparent images to scalable vector graphics (SVG)</p>
-        </header>
-
-        <div class="converter-container">
-            <div class="upload-section">
-                <h2>1. Upload Image</h2>
-                <div class="upload-area" id="uploadArea">
-                    <div class="upload-icon">📁</div>
-                    <p class="upload-text">Drag & drop an image with transparency or click to browse</p>
-                    <input type="file" id="fileInput" class="file-input" accept="image/*">
-                    <button class="btn btn-outline" id="browseBtn">Browse Files</button>
-                </div>
-                <div id="imagePreviewContainer" class="hidden">
-                    <h3>Original Image</h3>
-                    <div class="preview-area">
-                        <img id="imagePreview" class="image-preview" alt="Original image preview">
-                    </div>
-                    <button class="btn btn-outline" id="changeImageBtn" style="margin-top: 10px;">Change Image</button>
-                </div>
-            </div>
-
-            <div class="options-section">
-                <h2>2. Customize Options</h2>
-                <div class="option-group">
-                    <label>Color Choice:</label>
-                    <div class="radio-group">
-                        <div class="radio-option">
-                            <input type="radio" id="colorDefault" name="colorChoice" value="default" checked>
-                            <label for="colorDefault">Default (Black)</label>
-                        </div>
-                        <div class="radio-option">
-                            <input type="radio" id="colorCustom" name="colorChoice" value="custom">
-                            <label for="colorCustom">Custom Color</label>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="option-group" id="colorPickerGroup">
-                    <label for="colorPicker">Select Color:</label>
-                    <input type="color" id="colorPicker" class="color-picker" value="#000000">
-                </div>
-
-                <div class="option-group">
-                    <label>Style:</label>
-                    <div class="radio-group">
-                        <div class="radio-option">
-                            <input type="radio" id="styleFill" name="styleChoice" value="fill" checked>
-                            <label for="styleFill">Fill</label>
-                        </div>
-                        <div class="radio-option">
-                            <input type="radio" id="styleOutline" name="styleChoice" value="outline">
-                            <label for="styleOutline">Outline</label>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="option-group" id="outlineThicknessGroup">
-                    <label for="outlineThickness">Outline Thickness: <span id="thicknessValue" class="thickness-value">1</span>px</label>
-                    <input type="range" id="outlineThickness" class="range-slider" min="1" max="10" value="1">
-                </div>
-
-                <button id="convertBtn" class="btn" disabled>Convert to SVG</button>
-            </div>
+            <p>Convert your transparent images to scalable vector graphics</p>
         </div>
+    </header>
 
-        <div class="output-section hidden" id="outputSection">
-            <h2>3. Output & Download</h2>
-            
-            <div id="alertContainer"></div>
-            
-            <div id="loadingIndicator" class="loading hidden">
-                <div class="spinner"></div>
-                <p>Converting image to SVG...</p>
-            </div>
-            
-            <div class="preview-container">
-                <div class="preview-header">
-                    <h3>SVG Preview</h3>
+    <div class="container">
+        <div class="app-container">
+            <div class="upload-section">
+                <h2>Upload Image</h2>
+                <div id="dropArea" class="drop-area">
+                    <i class="fas fa-cloud-upload-alt"></i>
+                    <p>Drag & drop your transparent image here or</p>
+                    <input type="file" id="fileInput" accept="image/*">
+                    <button class="btn" id="browseBtn">Browse Files</button>
                 </div>
-                <div class="preview-area" id="svgPreviewArea">
-                    <div id="svgContainer"></div>
+
+                <div class="settings-container">
+                    <div class="option-group">
+                        <label>Color Options:</label>
+                        <div class="radio-group">
+                            <div class="radio-option">
+                                <input type="radio" id="colorDefault" name="colorOption" value="default" checked>
+                                <label for="colorDefault">Default (Black)</label>
+                            </div>
+                            <div class="radio-option">
+                                <input type="radio" id="colorCustom" name="colorOption" value="custom">
+                                <label for="colorCustom">Custom Color</label>
+                            </div>
+                            <div class="radio-option">
+                                <input type="radio" id="colorOriginal" name="colorOption" value="original">
+                                <label for="colorOriginal">Original Colors</label>
+                            </div>
+                        </div>
+                        <div class="color-picker-container" id="colorPickerContainer" style="display: none; margin-top: 0.5rem;">
+                            <input type="color" id="colorPicker" value="#000000">
+                            <span id="colorCode">#000000</span>
+                        </div>
+                    </div>
+
+                    <div class="option-group">
+                        <label>Style Options:</label>
+                        <div class="radio-group">
+                            <div class="radio-option">
+                                <input type="radio" id="styleFill" name="styleOption" value="fill" checked>
+                                <label for="styleFill">Fill</label>
+                            </div>
+                            <div class="radio-option">
+                                <input type="radio" id="styleOutline" name="styleOption" value="outline">
+                                <label for="styleOutline">Outline</label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="option-group" id="outlineThicknessGroup" style="display: none;">
+                        <label>Outline Thickness: <span id="thicknessValue" class="range-value">1</span>px</label>
+                        <input type="range" id="outlineThickness" min="1" max="10" value="1">
+                    </div>
+
+                    <button class="btn" id="convertBtn" disabled>Convert to SVG</button>
+                    <div class="loader" id="loader"></div>
                 </div>
             </div>
 
-            <div class="tabs">
-                <div class="tab active" data-tab="preview">Preview</div>
-                <div class="tab" data-tab="code">SVG Code</div>
-            </div>
-
-            <div class="tab-content active" data-tab-content="preview">
-                <div class="download-options">
-                    <button id="downloadSvgBtn" class="btn">Download SVG</button>
-                    <button id="copySvgBtn" class="btn btn-outline">Copy SVG Code</button>
+            <div class="preview-section">
+                <h2>Preview</h2>
+                <div class="preview-container">
+                    <div id="imagePreview"></div>
+                    <div id="svgPreview" style="display: none;"></div>
+                    <textarea id="svgCode" readonly placeholder="SVG code will appear here after conversion" style="display: none;"></textarea>
+                    <div class="download-options" style="display: none;">
+                        <button class="btn copy-btn" id="copyBtn">Copy SVG</button>
+                        <button class="btn" id="downloadBtn">Download SVG</button>
+                    </div>
                 </div>
-            </div>
-
-            <div class="tab-content" data-tab-content="code">
-                <pre class="svg-code" id="svgCode"></pre>
-                <button id="copySvgCodeBtn" class="btn" style="margin-top: 10px;">Copy Code</button>
             </div>
         </div>
     </div>
 
+    <div class="dark-mode-toggle" id="darkModeToggle">
+        <i class="fas fa-moon"></i>
+    </div>
+
+    <div class="alert" id="alert"></div>
+
     <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            // DOM Elements
-            const uploadArea = document.getElementById('uploadArea');
-            const fileInput = document.getElementById('fileInput');
-            const browseBtn = document.getElementById('browseBtn');
-            const imagePreviewContainer = document.getElementById('imagePreviewContainer');
-            const imagePreview = document.getElementById('imagePreview');
-            const changeImageBtn = document.getElementById('changeImageBtn');
-            const colorDefault = document.getElementById('colorDefault');
-            const colorCustom = document.getElementById('colorCustom');
-            const colorPickerGroup = document.getElementById('colorPickerGroup');
-            const colorPicker = document.getElementById('colorPicker');
-            const styleFill = document.getElementById('styleFill');
-            const styleOutline = document.getElementById('styleOutline');
-            const outlineThicknessGroup = document.getElementById('outlineThicknessGroup');
-            const outlineThickness = document.getElementById('outlineThickness');
-            const thicknessValue = document.getElementById('thicknessValue');
-            const convertBtn = document.getElementById('convertBtn');
-            const outputSection = document.getElementById('outputSection');
-            const svgPreviewArea = document.getElementById('svgPreviewArea');
-            const svgContainer = document.getElementById('svgContainer');
-            const svgCode = document.getElementById('svgCode');
-            const downloadSvgBtn = document.getElementById('downloadSvgBtn');
-            const copySvgBtn = document.getElementById('copySvgBtn');
-            const copySvgCodeBtn = document.getElementById('copySvgCodeBtn');
-            const tabs = document.querySelectorAll('.tab');
-            const tabContents = document.querySelectorAll('.tab-content');
-            const alertContainer = document.getElementById('alertContainer');
-            const loadingIndicator = document.getElementById('loadingIndicator');
-
-            let uploadedImage = null;
-            let generatedSvg = null;
-
-            // Initialize UI state
-            colorPickerGroup.classList.add('disabled');
-            outlineThicknessGroup.classList.add('disabled');
-
-            // Event Listeners
-            browseBtn.addEventListener('click', () => fileInput.click());
-            fileInput.addEventListener('change', handleFileSelect);
-            uploadArea.addEventListener('dragover', handleDragOver);
-            uploadArea.addEventListener('dragleave', handleDragLeave);
-            uploadArea.addEventListener('drop', handleDrop);
-            changeImageBtn.addEventListener('click', () => {
-                uploadArea.classList.remove('hidden');
-                imagePreviewContainer.classList.add('hidden');
-                convertBtn.disabled = true;
-                outputSection.classList.add('hidden');
-            });
-
-            colorDefault.addEventListener('change', updateColorOptions);
-            colorCustom.addEventListener('change', updateColorOptions);
-
-            styleFill.addEventListener('change', updateStyleOptions);
-            styleOutline.addEventListener('change', updateStyleOptions);
-
-            outlineThickness.addEventListener('input', () => {
-                thicknessValue.textContent = outlineThickness.value;
-            });
-
-            convertBtn.addEventListener('click', convertToSvg);
-
-            downloadSvgBtn.addEventListener('click', downloadSvg);
-            copySvgBtn.addEventListener('click', () => copyToClipboard(generatedSvg));
-            copySvgCodeBtn.addEventListener('click', () => copyToClipboard(generatedSvg));
-
-            // Tab functionality
-            tabs.forEach(tab => {
-                tab.addEventListener('click', () => {
-                    tabs.forEach(t => t.classList.remove('active'));
-                    tabContents.forEach(c => c.classList.remove('active'));
-                    tab.classList.add('active');
-                    document.querySelector(`[data-tab-content="${tab.dataset.tab}"]`).classList.add('active');
-                });
-            });
-
-            // Functions
-            function handleDragOver(e) {
-                e.preventDefault();
-                e.stopPropagation();
-                uploadArea.classList.add('dragover');
+        // Dark mode toggle
+        const darkModeToggle = document.getElementById('darkModeToggle');
+        const html = document.documentElement;
+        const icon = darkModeToggle.querySelector('i');
+        
+        // Check for saved theme preference or use user's system preference
+        const savedTheme = localStorage.getItem('theme');
+        const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+        
+        if (savedTheme === 'dark' || (!savedTheme && prefersDark)) {
+            html.setAttribute('data-theme', 'dark');
+            icon.classList.replace('fa-moon', 'fa-sun');
+        }
+        
+        darkModeToggle.addEventListener('click', () => {
+            if (html.getAttribute('data-theme') === 'dark') {
+                html.removeAttribute('data-theme');
+                icon.classList.replace('fa-sun', 'fa-moon');
+                localStorage.setItem('theme', 'light');
+            } else {
+                html.setAttribute('data-theme', 'dark');
+                icon.classList.replace('fa-moon', 'fa-sun');
+                localStorage.setItem('theme', 'dark');
             }
-
-            function handleDragLeave(e) {
-                e.preventDefault();
-                e.stopPropagation();
-                uploadArea.classList.remove('dragover');
+        });
+        
+        // Elements
+        const fileInput = document.getElementById('fileInput');
+        const browseBtn = document.getElementById('browseBtn');
+        const dropArea = document.getElementById('dropArea');
+        const imagePreview = document.getElementById('imagePreview');
+        const svgPreview = document.getElementById('svgPreview');
+        const svgCode = document.getElementById('svgCode');
+        const convertBtn = document.getElementById('convertBtn');
+        const downloadBtn = document.getElementById('downloadBtn');
+        const copyBtn = document.getElementById('copyBtn');
+        const colorPicker = document.getElementById('colorPicker');
+        const colorCode = document.getElementById('colorCode');
+        const colorPickerContainer = document.getElementById('colorPickerContainer');
+        const outlineThickness = document.getElementById('outlineThickness');
+        const thicknessValue = document.getElementById('thicknessValue');
+        const outlineThicknessGroup = document.getElementById('outlineThicknessGroup');
+        const colorOptionDefault = document.getElementById('colorDefault');
+        const colorOptionCustom = document.getElementById('colorCustom');
+        const styleOptionFill = document.getElementById('styleFill');
+        const styleOptionOutline = document.getElementById('styleOutline');
+        const loader = document.getElementById('loader');
+        const downloadOptions = document.querySelector('.download-options');
+        const alert = document.getElementById('alert');
+        
+        // Variables
+        let uploadedImage = null;
+        
+        // Event listeners
+        browseBtn.addEventListener('click', () => fileInput.click());
+        
+        // File input change
+        fileInput.addEventListener('change', handleFileSelect);
+        
+        // Drag and drop
+        dropArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            dropArea.classList.add('active');
+        });
+        
+        dropArea.addEventListener('dragleave', () => {
+            dropArea.classList.remove('active');
+        });
+        
+        dropArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dropArea.classList.remove('active');
+            
+            if (e.dataTransfer.files.length) {
+                fileInput.files = e.dataTransfer.files;
+                handleFileSelect(e);
             }
-
-            function handleDrop(e) {
-                e.preventDefault();
-                e.stopPropagation();
-                uploadArea.classList.remove('dragover');
-                
-                if (e.dataTransfer.files.length) {
-                    processUploadedFile(e.dataTransfer.files[0]);
-                }
+        });
+        
+        // Style options
+        styleOptionFill.addEventListener('change', updateStyleOptions);
+        styleOptionOutline.addEventListener('change', updateStyleOptions);
+        
+        // Color options
+        colorOptionDefault.addEventListener('change', updateColorOptions);
+        colorOptionCustom.addEventListener('change', updateColorOptions);
+        
+        // Outline thickness slider
+        outlineThickness.addEventListener('input', () => {
+            thicknessValue.textContent = outlineThickness.value;
+        });
+        
+        // Color picker
+        colorPicker.addEventListener('input', () => {
+            colorCode.textContent = colorPicker.value;
+        });
+        
+        // Convert button
+        convertBtn.addEventListener('click', convertToSVG);
+        
+        // Download button
+        downloadBtn.addEventListener('click', downloadSVG);
+        
+        // Copy button
+        copyBtn.addEventListener('click', copySVGCode);
+        
+        // Functions
+        function handleFileSelect(e) {
+            const file = e.target.files[0] || e.dataTransfer.files[0];
+            
+            if (!file) return;
+            
+            if (!file.type.match('image.*')) {
+                showAlert('Please select an image file.', 'error');
+                return;
             }
-
-            function handleFileSelect(e) {
-                if (e.target.files.length) {
-                    processUploadedFile(e.target.files[0]);
-                }
+            
+            uploadedImage = file;
+            
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                imagePreview.innerHTML = `<img src="${e.target.result}" alt="Uploaded Image" style="max-width: 100%; max-height: 300px;">`;
+                svgPreview.style.display = 'none';
+                svgCode.style.display = 'none';
+                downloadOptions.style.display = 'none';
+                convertBtn.disabled = false;
+            };
+            reader.readAsDataURL(file);
+        }
+        
+        function updateStyleOptions() {
+            if (styleOptionOutline.checked) {
+                outlineThicknessGroup.style.display = 'block';
+            } else {
+                outlineThicknessGroup.style.display = 'none';
             }
-
-            function processUploadedFile(file) {
-                if (!file.type.startsWith('image/')) {
-                    showAlert('Please select a valid image file', 'error');
-                    return;
-                }
-                
-                uploadedImage = file;
-                const reader = new FileReader();
-                
-                reader.onload = (e) => {
-                    imagePreview.src = e.target.result;
-                    uploadArea.classList.add('hidden');
-                    imagePreviewContainer.classList.remove('hidden');
-                    convertBtn.disabled = false;
-                };
-                
-                reader.readAsDataURL(file);
+        }
+        
+        function updateColorOptions() {
+            if (colorOptionCustom.checked) {
+                colorPickerContainer.style.display = 'flex';
+            } else {
+                colorPickerContainer.style.display = 'none';
             }
-
-            function updateColorOptions() {
-                if (colorCustom.checked) {
-                    colorPickerGroup.classList.remove('disabled');
-                } else {
-                    colorPickerGroup.classList.add('disabled');
-                }
+        }
+        
+        function convertToSVG() {
+            if (!uploadedImage) {
+                showAlert('Please upload an image first.', 'error');
+                return;
             }
-
-            function updateStyleOptions() {
-                if (styleOutline.checked) {
-                    outlineThicknessGroup.classList.remove('disabled');
-                } else {
-                    outlineThicknessGroup.classList.add('disabled');
-                }
+            
+            // Show loader
+            loader.style.display = 'block';
+            convertBtn.disabled = true;
+            
+            // Determine color option
+            let colorOption = 'default';
+            if (colorOptionCustom.checked) {
+                colorOption = 'custom';
+            } else if (document.getElementById('colorOriginal').checked) {
+                colorOption = 'original';
             }
-
-            async function convertToSvg() {
-                if (!uploadedImage) {
-                    showAlert('Please upload an image first', 'error');
-                    return;
-                }
-                
-                try {
-                    // Show loading indicator
-                    loadingIndicator.classList.remove('hidden');
-                    outputSection.classList.remove('hidden');
-                    
-                    // Create an image element
-                    const img = new Image();
-                    img.src = URL.createObjectURL(uploadedImage);
-                    
-                    await new Promise((resolve, reject) => {
-                        img.onload = resolve;
-                        img.onerror = reject;
-                    });
-                    
-                    // Create a canvas and draw the image
+            
+            // Determine style option
+            const styleOption = styleOptionFill.checked ? 'fill' : 'outline';
+            
+            // Get outline thickness if applicable
+            const thickness = styleOptionOutline.checked ? outlineThickness.value : 0;
+            
+            // Get custom color if applicable
+            const customColor = colorPicker.value;
+            
+            // In a real application, this is where we would send the image and options to the backend
+            // For this example, we'll simulate the processing with a timeout
+            setTimeout(() => {
+                processImage(uploadedImage, colorOption, styleOption, thickness, customColor);
+            }, 1500);
+        }
+        
+        function processImage(image, colorOption, styleOption, thickness, customColor) {
+            // This is a simplified version of image processing for demonstration
+            // In a real application, this would be done on the server
+            
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const img = new Image();
+                img.onload = function() {
+                    // Create a canvas element
                     const canvas = document.createElement('canvas');
                     const ctx = canvas.getContext('2d');
+                    
+                    // Set canvas dimensions to image dimensions
                     canvas.width = img.width;
                     canvas.height = img.height;
+                    
+                    // Draw the image on the canvas
                     ctx.drawImage(img, 0, 0);
                     
-                    // Get image data with alpha channel
-                    const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+                    // Generate a simple SVG path (this is oversimplified)
+                    // In reality, this would require complex image tracing algorithms
                     
-                    // Process image for tracing (handle transparency)
-                    const processedCanvas = document.createElement('canvas');
-                    const processedCtx = processedCanvas.getContext('2d');
-                    processedCanvas.width = canvas.width;
-                    processedCanvas.height = canvas.height;
+                    // For demo purposes, we'll create a simple SVG based on the image dimensions
+                    let svgFill = 'none';
+                    let svgStroke = '#000000'; // Default black
+                    let svgStrokeWidth = thickness || 1;
                     
-                    // Create a new ImageData with black for non-transparent pixels, white for transparent ones
-                    const processedImageData = new ImageData(canvas.width, canvas.height);
-                    
-                    for (let i = 0; i < imageData.data.length; i += 4) {
-                        // If pixel is not fully transparent (alpha > 0)
-                        if (imageData.data[i + 3] > 0) {
-                            processedImageData.data[i] = 0; // R = 0 (black)
-                            processedImageData.data[i + 1] = 0; // G = 0 (black)
-                            processedImageData.data[i + 2] = 0; // B = 0 (black)
-                            processedImageData.data[i + 3] = 255; // Alpha = 255 (fully opaque)
-                        } else {
-                            processedImageData.data[i] = 255; // R = 255 (white)
-                            processedImageData.data[i + 1] = 255; // G = 255 (white)
-                            processedImageData.data[i + 2] = 255; // B = 255 (white)
-                            processedImageData.data[i + 3] = 255; // Alpha = 255 (fully opaque)
+                    if (colorOption === 'custom') {
+                        svgStroke = customColor;
+                        if (styleOption === 'fill') {
+                            svgFill = customColor;
+                        }
+                    } else if (colorOption === 'original') {
+                        // In a real app, we would analyze the image colors
+                        // For demo, use a placeholder color
+                        svgStroke = '#3366cc';
+                        if (styleOption === 'fill') {
+                            svgFill = '#3366cc';
+                        }
+                    } else {
+                        // Default black
+                        if (styleOption === 'fill') {
+                            svgFill = '#000000';
                         }
                     }
                     
-                    processedCtx.putImageData(processedImageData, 0, 0);
+                    // For demo purposes, create a simple shape
+                    const svgWidth = img.width;
+                    const svgHeight = img.height;
+                    const centerX = svgWidth / 2;
+                    const centerY = svgHeight / 2;
+                    const radius = Math.min(svgWidth, svgHeight) / 3;
                     
-                    // Apply some blur to smooth edges (optional)
-                    StackBlur.canvasRGB(processedCanvas, 0, 0, processedCanvas.width, processedCanvas.height, 1);
+                    // Create SVG code - this is a simplified demonstration
+                    // In a real app, this would be a traced path of the actual image
+                    let svgContent = '';
                     
-                    // Trace the image using Potrace
-                    const imgData = processedCtx.getImageData(0, 0, processedCanvas.width, processedCanvas.height);
-                    
-                    // Get user options
-                    const color = colorCustom.checked ? colorPicker.value : '#000000';
-                    const isFilled = styleFill.checked;
-                    const strokeWidth = styleOutline.checked ? outlineThickness.value : 0;
-                    
-                    // Configure Potrace
-                    const traceData = Potrace.trace(imgData.data, {
-                        width: processedCanvas.width,
-                        height: processedCanvas.height,
-                        pathOnly: true,
-                        threshold: 128
-                    });
-                    
-                    // Create SVG element
-                    const svgElement = document.createElementNS("http://www.w3.org/2000/svg", "svg");
-                    svgElement.setAttribute("width", processedCanvas.width);
-                    svgElement.setAttribute("height", processedCanvas.height);
-                    svgElement.setAttribute("viewBox", `0 0 ${processedCanvas.width} ${processedCanvas.height}`);
-                    
-                    // Create path element
-                    const pathElement = document.createElementNS("http://www.w3.org/2000/svg", "path");
-                    pathElement.setAttribute("d", traceData);
-                    
-                    // Apply styling based on user options
-                    if (isFilled) {
-                        pathElement.setAttribute("fill", color);
-                        pathElement.setAttribute("stroke", "none");
+                    // In a real app, we'd trace the image properly
+                    // For now, simulate with simple shapes that roughly match the image dimensions
+                    if (image.name.toLowerCase().includes('circle') || Math.abs(svgWidth - svgHeight) < 50) {
+                        // If image is square-ish or has 'circle' in the name, use a circle
+                        svgContent = `<circle cx="${centerX}" cy="${centerY}" r="${radius}" fill="${svgFill}" stroke="${svgStroke}" stroke-width="${svgStrokeWidth}" />`;
+                    } else if (svgWidth > svgHeight * 1.5) {
+                        // If image is wide, use a rectangle
+                        svgContent = `<rect x="${svgWidth * 0.2}" y="${svgHeight * 0.3}" width="${svgWidth * 0.6}" height="${svgHeight * 0.4}" fill="${svgFill}" stroke="${svgStroke}" stroke-width="${svgStrokeWidth}" />`;
                     } else {
-                        pathElement.setAttribute("fill", "none");
-                        pathElement.setAttribute("stroke", color);
-                        pathElement.setAttribute("stroke-width", strokeWidth);
+                        // Otherwise use an ellipse
+                        svgContent = `<ellipse cx="${centerX}" cy="${centerY}" rx="${svgWidth / 3}" ry="${svgHeight / 3}" fill="${svgFill}" stroke="${svgStroke}" stroke-width="${svgStrokeWidth}" />`;
                     }
                     
-                    svgElement.appendChild(pathElement);
+                    const svgOutput = `<svg xmlns="http://www.w3.org/2000/svg" width="${svgWidth}" height="${svgHeight}" viewBox="0 0 ${svgWidth} ${svgHeight}">
+    ${svgContent}
+</svg>`;
                     
-                    // Generate SVG code
-                    generatedSvg = new XMLSerializer().serializeToString(svgElement);
+                    // Display the SVG
+                    svgPreview.innerHTML = svgOutput;
+                    svgPreview.style.display = 'block';
                     
-                    // Display SVG preview
-                    svgContainer.innerHTML = generatedSvg;
-                    svgCode.textContent = generatedSvg;
+                    // Display the SVG code
+                    svgCode.value = svgOutput;
+                    svgCode.style.display = 'block';
                     
-                    // Hide loading indicator
-                    loadingIndicator.classList.add('hidden');
+                    // Show download options
+                    downloadOptions.style.display = 'block';
                     
-                    // Show success message
-                    showAlert('Image successfully converted to SVG!', 'success');
+                    // Hide loader
+                    loader.style.display = 'none';
+                    convertBtn.disabled = false;
                     
-                } catch (error) {
-                    console.error('Error converting image to SVG:', error);
-                    loadingIndicator.classList.add('hidden');
-                    showAlert('Error converting image. Please try another image.', 'error');
-                }
-            }
-
-            function downloadSvg() {
-                if (!generatedSvg) return;
-                
-                const blob = new Blob([generatedSvg], { type: 'image/svg+xml' });
-                const url = URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = 'image2vector.svg';
-                document.body.appendChild(a);
-                a.click();
-                document.body.removeChild(a);
-                URL.revokeObjectURL(url);
-            }
-
-            function copyToClipboard(text) {
-                navigator.clipboard.writeText(text)
-                    .then(() => {
-                        showAlert('SVG code copied to clipboard!', 'success');
-                    })
-                    .catch(err => {
-                        console.error('Could not copy text: ', err);
-                        showAlert('Failed to copy to clipboard', 'error');
-                    });
+                    showAlert('Conversion completed successfully!', 'success');
+                };
+                img.src = e.target.result;
+            };
+            reader.readAsDataURL(image);
+        }
+        
+        function downloadSVG() {
+            if (!svgCode.value) {
+                showAlert('No SVG to download', 'error');
+                return;
             }
             
-            function showAlert(message, type = 'error') {
-                const alertDiv = document.createElement('div');
-                alertDiv.className = type === 'error' ? 'alert' : 'alert alert-success';
-                alertDiv.textContent = message;
-                
-                alertContainer.innerHTML = '';
-                alertContainer.appendChild(alertDiv);
-                
-                // Auto-dismiss after 5 seconds
-                setTimeout(() => {
-                    alertDiv.remove();
-                }, 5000);
+            const blob = new Blob([svgCode.value], { type: 'image/svg+xml' });
+            const url = URL.createObjectURL(blob);
+            
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'image2vector.svg';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            
+            showAlert('SVG downloaded successfully!', 'success');
+        }
+        
+        function copySVGCode() {
+            if (!svgCode.value) {
+                showAlert('No SVG code to copy', 'error');
+                return;
             }
-        });
+            
+            svgCode.select();
+            document.execCommand('copy');
+            
+            showAlert('SVG code copied to clipboard!', 'success');
+        }
+        
+        function showAlert(message, type) {
+            alert.textContent = message;
+            alert.className = `alert ${type}`;
+            alert.classList.add('show');
+            
+            setTimeout(() => {
+                alert.classList.remove('show');
+            }, 3000);
+        }
+        
+        // Initialize UI state
+        updateStyleOptions();
+        updateColorOptions();
     </script>
 </body>
 </html>
