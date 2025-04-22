@@ -1,123 +1,150 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Video Sharing Website</title>
-    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
-    <style>
-        body {
-            padding: 20px;
-            text-align: center;
-            margin: 0;
-        }
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Video Sharing Website</title>
+  <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" />
+  <style>
+    * {
+      box-sizing: border-box;
+    }
 
-        #video-container {
+    body, html {
+      margin: 0;
+      padding: 0;
+      height: 100%;
+      overflow-x: hidden;
+      font-family: sans-serif;
+    }
+
+    #video-container {
       position: fixed;
       top: 0;
       left: 0;
-      width: 100%;
       height: 100%;
-      overflow: hidden;
+      width: 100%;
       z-index: -1;
+      overflow: hidden;
     }
 
     #video-background {
-      position: fixed;
+      position: absolute;
       top: 50%;
       left: 50%;
-      transform: translate(-50%, -50%);
       min-width: 100%;
       min-height: 100%;
       width: auto;
       height: auto;
-      z-index: -1;
+      transform: translate(-50%, -50%);
+      object-fit: cover;
     }
-
-    button {
-    padding: 10px 20px;
-    background-color: #004792;
-    color: #fff;
-    border: none;
-    border-radius: 5px;
-    margin: 5px;
-    cursor: pointer;
-}
-
 
     #content {
       position: relative;
       z-index: 1;
-      color: white; 
-      /* Add additional styling for your content if needed */
+      color: white;
+      padding: 2rem 1rem;
+      text-align: center;
     }
 
-        h1 {
-            text-align: center;
-            margin-bottom: 20px;
-        }
+    h1, h3 {
+      margin-bottom: 20px;
+    }
 
-        h3 {
-            text-align: center;
-            margin-bottom: 20px;
-        }
+    .iframe-container {
+      position: relative;
+      width: 100%;
+      padding-bottom: 56.25%;
+      height: 0;
+      overflow: hidden;
+      margin-bottom: 1rem;
+    }
 
-        video {
-            width: 100%;
-            max-width: 800px;
-            display: block;
-            margin: 0 auto;
-        }
+    .iframe-container iframe {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      border: none;
+    }
 
-        @media only screen and (max-width: 600px) {
-            #video-background {
-                width: 100%;
-                height: auto;
-            }
+    button {
+      padding: 10px 20px;
+      background-color: #004792;
+      color: #fff;
+      border: none;
+      border-radius: 5px;
+      margin: 5px;
+      cursor: pointer;
+      transition: background-color 0.2s ease-in-out;
+    }
 
-            h1 {
-                font-size: 24px;
-            }
+    button:hover {
+      background-color: #003570;
+    }
 
-            h3 {
-                font-size: 18px;
-            }
-        }
-    </style>
+    footer {
+      color: #ccc;
+      margin-top: 2rem;
+      font-size: 0.9rem;
+    }
+
+    @media (max-width: 768px) {
+      h1 {
+        font-size: 28px;
+      }
+
+      h3 {
+        font-size: 20px;
+      }
+    }
+
+    @media (max-width: 480px) {
+      h1 {
+        font-size: 22px;
+      }
+
+      h3 {
+        font-size: 16px;
+      }
+    }
+  </style>
 </head>
 <body>
-    <div id="content">
-    <div class="container">
-        <h1>"KWITIS"</h1>
-        <div class="iframe-container">
-            <iframe id="iframe" width="1120" height="630" src="https://www.dailymotion.com/embed/video/x8qcj8p?autoplay=1" frameborder="10" allowfullscreen allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"></iframe>
-        </div>
-        <br>
-        <h4>Not Working? Change Server</h4>
-        <div class="page-selector">
-            <button onclick="loadPage('https://streamtape.com/v/LJm1DbXxwoHRBvA/KWITIS.mp4')">Server 1 "DailyMotion" - Main</button>
-            <button onclick="loadPage('https://drive.google.com/file/d/1lC_tiL4jmfj75hnj_zvqaNMF7AjcJvKV/view?usp=sharing')">Server 2 "Google Drive" - Not Working</button>
-            <button onclick="loadPage('https://streamtape.com/v/LJm1DbXxwoHRBvA/KWITIS.mp4')">Server 3 "streamtape" - Ads</button>
-            <button onclick="loadPage('https://mdbekjwqa.pw/e/l6pd0ernfgdwkz')">Server 3 "MixDrop" - Ads</button>
-            <button onclick="loadPage('https://go.axel.network/preview/8562864336?back=%2Ffiles%2Fstorage%2F7907450960&t=1701995006398')">Server 4 'AxelGo' - Ads</button>
-        </div>
-    </div>
-    <script>
-        function loadPage(url) {
-            const iframe = document.getElementById("iframe");
-            iframe.src = url;
-        }
-    </script>    
-        <h3>NIGGA KA TLGA YA</h3>
+  <div id="video-container">
+    <video id="video-background" autoplay muted loop>
+      <source src="bg.webm" type="video/webm" />
+      Your browser does not support the video tag.
+    </video>
+  </div>
 
-        <p style color="gray"><footer>Site made by PD Sites</footer></p>
+  <div id="content" class="container">
+    <h1>"KWITIS"</h1>
+
+    <div class="iframe-container">
+      <iframe id="iframe" src="https://www.dailymotion.com/embed/video/x8qcj8p?autoplay=1" allowfullscreen allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"></iframe>
     </div>
-    <div id="video-container">
-        <video id="video-background" autoplay muted loop>
-            <source src="bg.webm" type="video/webm">
-            Your browser does not support the video tag.
-          </video>
-          </div>
+
+    <h4>Not Working? Change Server</h4>
+    <div class="page-selector">
+      <button onclick="loadPage('https://streamtape.com/v/LJm1DbXxwoHRBvA/KWITIS.mp4')">Server 1 "DailyMotion" - Main</button>
+      <button onclick="loadPage('https://drive.google.com/file/d/1lC_tiL4jmfj75hnj_zvqaNMF7AjcJvKV/view?usp=sharing')">Server 2 "Google Drive" - Not Working</button>
+      <button onclick="loadPage('https://streamtape.com/v/LJm1DbXxwoHRBvA/KWITIS.mp4')">Server 3 "streamtape" - Ads</button>
+      <button onclick="loadPage('https://mdbekjwqa.pw/e/l6pd0ernfgdwkz')">Server 4 "MixDrop" - Ads</button>
+      <button onclick="loadPage('https://go.axel.network/preview/8562864336?back=%2Ffiles%2Fstorage%2F7907450960&t=1701995006398')">Server 5 "AxelGo" - Ads</button>
     </div>
+
+    <h3>Support indie filmmakers and share with friends!</h3>
+    <footer>Site made by PD Sites</footer>
+  </div>
+
+  <script>
+    function loadPage(url) {
+      const iframe = document.getElementById("iframe");
+      iframe.src = url;
+    }
+  </script>
 </body>
 </html>
